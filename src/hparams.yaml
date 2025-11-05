@@ -1,0 +1,289 @@
+landoceandataset:
+  dataset:
+    num_classes: 1
+    regression: false
+    max_epochs: 500
+    num_samples: 5000
+    patience: 30
+    batch_size: 128
+    addcoastline: False
+    dropout: False
+  direct-linear:
+    optimizer:
+      lr: 0.0265847155325488
+      wd: 0.1858733703347651
+  direct-mlp:
+    dim_hidden: 128
+    num_layers: 3
+    optimizer:
+      lr: 0.0035558563048427
+      wd: 2.0958744260383424e-05
+  direct-siren:
+    dim_hidden: 128
+    num_layers: 2
+    optimizer:
+      lr: 0.0001725277183529
+      wd: 0.0001090817845892
+  direct-fcnet:
+    dim_hidden: 96
+    optimizer:
+      lr: 0.0004324458439668
+      wd: 1.029961854294854e-06
+  cartesian3d-linear:
+    optimizer:
+      lr: 0.0003
+      wd: 4.0e-05
+  cartesian3d-mlp:
+    dim_hidden: 96
+    num_layers: 2
+    optimizer:
+      lr: 0.0005306961036125
+      wd: 3.328140604442639e-06
+  cartesian3d-siren:
+    dim_hidden: 32
+    num_layers: 2
+    optimizer:
+      lr: 0.0012740213611169
+      wd: 0.0285902893156072
+  cartesian3d-fcnet:
+    dim_hidden: 32
+    optimizer:
+      lr: 0.0007861733421858
+      wd: 1.2390115862803522e-08
+  sphericalharmonics-linear:
+    legendre_polys: 20
+    optimizer:
+      lr: 0.0010349759437545
+      wd: 0.0004079629041632
+  sphericalharmonics-mlp:
+    legendre_polys: 15
+    dim_hidden: 64
+    num_layers: 2
+    optimizer:
+      lr: 0.0002552750718501
+      wd: 0.0076563901899422
+  sphericalharmonics-siren:
+    legendre_polys: 10
+    dim_hidden: 64
+    num_layers: 2
+    optimizer:
+      lr: 0.0001421671897373
+      wd: 0.0036709986823345
+  sphericalharmonics-fcnet:
+    legendre_polys: 15
+    dim_hidden: 64
+    optimizer:
+      lr: 0.0003118513690642
+      wd: 0.0145217811966975
+  theory-linear:
+    min_radius: 1
+    max_radius: 360
+    frequency_num: 32
+    optimizer:
+      lr: 0.0135095110064387
+      wd: 4.0889217403681565e-05
+  theory-mlp:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 16
+    dim_hidden: 96
+    num_layers: 1
+    optimizer:
+      lr: 0.0012361255318711
+      wd: 0.0009363775521204
+  theory-siren:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 48
+    dim_hidden: 96
+    num_layers: 2
+    optimizer:
+      lr: 0.0001004821525198
+      wd: 0.0022026749564627
+  theory-fcnet:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 48
+    dim_hidden: 96
+    optimizer:
+      lr: 0.0004003904143592
+      wd: 0.0019501871266907
+  grid-linear:
+    min_radius: 1
+    max_radius: 360
+    frequency_num: 64
+    optimizer:
+      lr: 0.0020783920661973
+      wd: 1.0054739949133692e-08
+  grid-mlp:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 32
+    dim_hidden: 96
+    num_layers: 1
+    optimizer:
+      lr: 0.0050218436457857
+      wd: 0.0017379670084103
+  grid-siren:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 16
+    dim_hidden: 96
+    num_layers: 2
+    optimizer:
+      lr: 0.0001200008856403
+      wd: 0.0002689034415994
+  grid-fcnet:
+    min_radius: 10
+    max_radius: 360
+    frequency_num: 64
+    dim_hidden: 96
+    optimizer:
+      lr: 0.0001646258900952
+      wd: 0.0032370519724719
+  spherec-fcnet:
+    dim_hidden: 128
+    frequency_num: 48
+    min_radius: 10
+    optimizer:
+      lr: 0.0002936420832489
+      wd: 0.0003516203341152
+  spherec-linear:
+    frequency_num: 64
+    min_radius: 1
+    optimizer:
+      lr: 0.0086648426453383
+      wd: 5.057961111652141e-08
+  spherec-mlp:
+    dim_hidden: 32
+    frequency_num: 48
+    min_radius: 10
+    num_layers: 3
+    optimizer:
+      lr: 0.0022019270449746
+      wd: 9.687375109260269e-07
+  spherec-siren:
+    dim_hidden: 128
+    frequency_num: 64
+    min_radius: 10
+    num_layers: 3
+    optimizer:
+      lr: 0.0001303588156941
+      wd: 1.1294548999450568e-08
+  spherecplus-fcnet:
+    dim_hidden: 128
+    frequency_num: 16
+    min_radius: 10
+    optimizer:
+      lr: 0.0002978265554359
+      wd: 3.0833343574568424e-08
+  spherecplus-linear:
+    frequency_num: 64
+    min_radius: 1
+    optimizer:
+      lr: 0.0050330956661103
+      wd: 0.0049597380852616
+  spherecplus-mlp:
+    dim_hidden: 128
+    frequency_num: 16
+    min_radius: 10
+    num_layers: 1
+    optimizer:
+      lr: 0.002785325558348
+      wd: 9.77950621702066e-07
+  spherecplus-siren:
+    dim_hidden: 96
+    frequency_num: 16
+    min_radius: 10
+    num_layers: 3
+    optimizer:
+      lr: 0.0001647981369387
+      wd: 0.0009302760295749
+  spherem-fcnet:
+    dim_hidden: 128
+    frequency_num: 48
+    min_radius: 10
+    optimizer:
+      lr: 0.0002970762838474
+      wd: 3.065570437320648e-07
+  spherem-linear:
+    frequency_num: 48
+    min_radius: 10
+    optimizer:
+      lr: 0.0089912420448412
+      wd: 0.0001057286788581
+  spherem-mlp:
+    dim_hidden: 96
+    frequency_num: 48
+    min_radius: 10
+    num_layers: 1
+    optimizer:
+      lr: 0.0020882990386273
+      wd: 0.0025919457877346
+  spherem-siren:
+    dim_hidden: 64
+    frequency_num: 16
+    min_radius: 10
+    num_layers: 3
+    optimizer:
+      lr: 0.0001180256049776
+      wd: 1.8879748451803423e-05
+  spheremplus-fcnet:
+    dim_hidden: 32
+    frequency_num: 16
+    min_radius: 19
+    optimizer:
+      wd: 0.0018379437126983
+      lr: 0.012860347363412
+  spheremplus-linear:
+    frequency_num: 32
+    min_radius: 10
+    optimizer:
+      lr: 0.0104241924188446
+      wd: 3.029763843436184e-05
+  spheremplus-mlp:
+    dim_hidden: 96
+    frequency_num: 64
+    min_radius: 1
+    num_layers: 3
+    optimizer:
+      lr: 0.0003564299350201
+      wd: 0.0341658111010196
+  spheremplus-siren:
+    dim_hidden: 128
+    frequency_num: 32
+    min_radius: 1
+    num_layers: 1
+    optimizer:
+      lr: 0.0001287864240105
+      wd: 0.0608073126481458
+  wrap-fcnet:
+    dim_hidden: 96
+    optimizer:
+      lr: 0.0022145127226669
+      wd: 1.859136777325107e-05
+  wrap-linear:
+    optimizer:
+      lr: 0.0573443293176404
+      wd: 5.239147536568486e-05
+  wrap-mlp:
+    dim_hidden: 96
+    num_layers: 2
+    optimizer:
+      lr: 0.0197475512304471
+      wd: 4.4558885812237795e-08
+  wrap-siren:
+    dim_hidden: 64
+    num_layers: 3
+    optimizer:
+      lr: 0.0005893623455571
+      wd: 0.0003864940630778
+  slepian-siren:
+    legendre_polys: 10
+    dim_hidden: 64
+    num_layers: 2
+    optimizer:
+      lr: 0.0001421671897373
+      wd: 0.0036709986823345
+
+
