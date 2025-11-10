@@ -1,6 +1,7 @@
 build
 results
 venv
+.venv
 datasets
 lightning_logs
 *.DS_Store
