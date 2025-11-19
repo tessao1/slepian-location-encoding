@@ -2,6 +2,7 @@ build
 results
 venv
 .venv
+.vscode
 datasets
 lightning_logs
 *.DS_Store

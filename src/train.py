@@ -55,14 +55,14 @@ def parse_args():
                                                                                     "landoceandataset"
                                                                                     ])
     parser.add_argument('--pe', default=["sphericalharmonics"], type=str, nargs='+', help='positional encoder(s)',
-                        choices=["sphericalharmonics", "slepian"])
+                        choices=["sphericalharmonics", "slepian", "slepianhybrid"])
     parser.add_argument('--nn', default=["siren"], type=str, nargs='+', help='neural network(s)',
                         choices=["linear", "siren", "fcnet"])
 
     # optional configs
     parser.add_argument('--save-model', action="store_true", help='save model checkpoint to results-dir')
     parser.add_argument('--log-wandb', action="store_true", help='log run to wandb')
-    parser.add_argument('--hparams', default="hparams.yaml", type=str, help='hypereparameter yaml')
+    parser.add_argument('--hparams', default="results/tune/landoceandataset/hparams.yaml", type=str, help='hypereparameter yaml')
     parser.add_argument('--results-dir', default="results/train", type=str, help='results directory')
     parser.add_argument('--expname', default=None, type=str,
                         help='experiment name. If specified, saves results in subfolder')
@@ -136,7 +136,7 @@ def fit(args):
     hparams = set_default_if_unset(hparams, "max_radius", 360)
 
     if args.dataset == "landoceandataset":
-        datamodule = LandOceanDataModule(batch_size=hparams["batch_size"])
+        datamodule = LandOceanDataModule(batch_size=hparams["batch_size"], mode='train')
 
 
     if args.resume_ckpt_from_results_dir:
@@ -153,10 +153,8 @@ def fit(args):
     )
 
     timer = Timer()
-    callbacks = [
-        EarlyStopping(monitor="val_loss", mode="min", patience=hparams["patience"]),
-        timer
-    ]
+    callbacks = [timer]
+    
     if args.save_model:
         callbacks += [ModelCheckpoint(
             dirpath=parse_resultsdir(args),
@@ -186,12 +184,6 @@ def fit(args):
             accelerator = 'cpu'
 
     print(f"Using accelerator: {accelerator}, devices: {devices}")
-
-    # if torch.cuda.is_available():
-    #     accelerator = 'gpu'
-
-
-    # print(f"using gpus: {devices}")
 
     trainer = pl.Trainer(
         max_epochs=hparams["max_epochs"],
@@ -248,15 +240,12 @@ def fit(args):
         
         if args.matplotlib or args.matplotlib_show:
             show = args.matplotlib_show
-            # plotting of world map
             title = f"{positional_encoding_name:1.8}-{neural_network_name:1.6} loss {testloss:.3f} acc {testaccuracy * 100:.2f} IoU {testiou * 100:.2f}"
 
             savepath = f"{parse_resultsdir(args)}/{title}.png".replace(" ", "_").replace("%", "")
             os.makedirs(os.path.dirname(savepath), exist_ok=True)
 
             plot_predictions(locationencoder, title=title, show=show, savepath=savepath)
-            # plot_predictions(locationencoder, title=title, show=show, savepath=savepath.replace('.pdf', '.png'))
-
  
     return locationencoder
 
@@ -269,7 +258,6 @@ if __name__ == '__main__':
 
     for pe in positional_encoders:
         for nn in neural_networks:
-            # overwrite lists with single argument
             args.nn = nn
             args.pe = pe
             fit(args)

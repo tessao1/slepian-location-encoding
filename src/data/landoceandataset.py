@@ -76,34 +76,30 @@ def get_data(N=5000, seed=0, grid=False):
     return lonlats, land
 
 class LandOceanDataModule(pl.LightningDataModule):
-    def __init__(self, num_samples=5000, batch_size=100):
+    def __init__(self, num_samples=5000, batch_size=100, mode='train'):
         super().__init__()
         self.num_samples = num_samples
         self.batch_size=batch_size
-        self.num_workers = 2
+        self.mode = mode
 
     def setup(self, stage: str):
         self.train_ds = TensorDataset(*get_data(self.num_samples, seed=0))
-        self.valid_ds = TensorDataset(*get_data(self.num_samples, seed=1))
+        
+        if self.mode == 'tune':
+            self.valid_ds = TensorDataset(*get_data(self.num_samples, seed=1))
+        else:
+            self.valid_ds = TensorDataset(*get_data(self.num_samples, seed=2))
+        
         self.evalu_ds = TensorDataset(*get_data(self.num_samples, grid=True))
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True,
-                          num_workers=self.num_workers,
-                          persistent_workers=True)
-
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.valid_ds, batch_size=self.batch_size, shuffle=False,
-                          num_workers=self.num_workers,
-                          persistent_workers=True)
-
+        return DataLoader(self.valid_ds, batch_size=self.batch_size, shuffle=False)
 
     def test_dataloader(self):
-        return DataLoader(self.evalu_ds, batch_size=self.batch_size, shuffle=False,
-                          num_workers=self.num_workers,
-                          persistent_workers=True)
-
+        return DataLoader(self.evalu_ds, batch_size=self.batch_size, shuffle=False)
 
 
 if __name__ == '__main__':

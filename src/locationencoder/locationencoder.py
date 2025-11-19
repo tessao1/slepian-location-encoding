@@ -28,6 +28,15 @@ def get_positional_encoding(name, hparams=None):
         else:
             return PE.SphericalHarmonics(legendre_polys=hparams['legendre_polys'],
                                          harmonics_calculation=hparams['harmonics_calculation'])
+    elif name == "slepianhybrid":
+        # default to analytic
+        if "harmonics_calculation" not in hparams.keys():
+            hparams["harmonics_calculation"] = "analytic"
+
+        return PE.SlepianSHHybrid(
+            legendre_polys=hparams['legendre_polys'],
+            harmonics_calculation=hparams['harmonics_calculation']
+        )   
     else:
         raise ValueError(f"{name} not a known positional encoding.")
 
@@ -63,8 +72,8 @@ class LocationEncoder(pl.LightningModule):
     def __init__(self, positional_encoding_name, neural_network_name, hparams):
         super().__init__()
 
-        self.learning_rate = hparams["optimizer"]["lr"]
-        self.weight_decay = hparams["optimizer"]["wd"]
+        self.learning_rate = hparams["lr"]
+        self.weight_decay = hparams["wd"]
         self.regression = get_param(hparams, "regression")
 
         self.loss_fn = AN_loss
