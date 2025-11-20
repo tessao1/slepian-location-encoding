@@ -21,6 +21,7 @@ from utils import (
 from locationencoder import LocationImageEncoder, LocationEncoder
 
 from lightning.pytorch.loggers import WandbLogger
+import wandb
 import torch
 import numpy as np
 import random
@@ -93,7 +94,7 @@ def parse_args():
     # overwrite certain hparams
     parser.add_argument('--legendre-polys', default=None, type=int)
     parser.add_argument('--min-radius', default=None, type=float)
-    parser.add_argument('--harmonics-calculation', default="analytic", type=str,
+    parser.add_argument('--harmonics-calculation', default="shtools", type=str,
                         choices=["analytic", "closed-form", "discretized", "shtools"],
                         help='calculation of spherical harmonics: ' +
                              'analytic uses pre-computed equations. This is exact, but works only up to degree 50, ' +
@@ -165,7 +166,7 @@ def fit(args):
 
     if args.log_wandb:
         logger = WandbLogger(project="slepian-location-encoding",
-                             name=f"{args.dataset}/{positional_encoding_name}-{neural_network_name}")
+                             name=f"{args.dataset}/{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}")
     else:
         logger = None
 
@@ -223,6 +224,14 @@ def fit(args):
             train_samples=len(datamodule.train_dataloader().dataset),
             embedding_dim=locationencoder.positional_encoder.embedding_dim
         )
+
+        if logger is not None:
+            logger.log_metrics({
+                "final/num_params": result["num_params"],
+                "final/train_duration": result["train_duration"],
+                "final/test_duration": result["test_duration"],
+                "final/embedding_dim": result["embedding_dim"]
+            })
                 # Add cache statistics to results if available
         if hasattr(locationencoder, 'positional_encoder') and hasattr(locationencoder.positional_encoder, 'get_cache_stats'):
             cache_stats = locationencoder.positional_encoder.get_cache_stats()
@@ -242,10 +251,19 @@ def fit(args):
             show = args.matplotlib_show
             title = f"{positional_encoding_name:1.8}-{neural_network_name:1.6} loss {testloss:.3f} acc {testaccuracy * 100:.2f} IoU {testiou * 100:.2f}"
 
-            savepath = f"{parse_resultsdir(args)}/{title}.png".replace(" ", "_").replace("%", "")
-            os.makedirs(os.path.dirname(savepath), exist_ok=True)
+            base_path = f"{parse_resultsdir(args)}/{title}".replace(" ", "_").replace("%", "")
+            os.makedirs(os.path.dirname(base_path), exist_ok=True)
+            
+            savepath_map = base_path + ".png"
+            savepath_globe = base_path + "_globe.png"
+            
+            plot_predictions(locationencoder, title=title, show=show, savepath=savepath_map, save_globe=True)
 
-            plot_predictions(locationencoder, title=title, show=show, savepath=savepath)
+            if logger is not None:
+                logger.experiment.log({
+                    "plots/prediction_map": wandb.Image(savepath_map, caption=f"{title} - Map View"),
+                    "plots/prediction_globe": wandb.Image(savepath_globe, caption=f"{title} - Globe View")
+                })
  
     return locationencoder
 

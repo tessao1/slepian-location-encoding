@@ -7,7 +7,7 @@ from .spherical_harmonics_shtools import SH as SH_shtools
 from .utils_cache import HarmonicsCache
 
 class SphericalHarmonics(nn.Module, HarmonicsCache):
-    def __init__(self, legendre_polys: int = 10, harmonics_calculation="analytic"):
+    def __init__(self, legendre_polys: int = 10, harmonics_calculation="shtools"):
         """
         legendre_polys: determines the number of legendre polynomials.
                         more polynomials lead more fine-grained resolutions
@@ -19,6 +19,11 @@ class SphericalHarmonics(nn.Module, HarmonicsCache):
         super(SphericalHarmonics, self).__init__()
         self.L, self.M = int(legendre_polys), int(legendre_polys)
         self.embedding_dim = self.L * self.M  #this equals the full spherical harmonics dimension L²
+        
+        if harmonics_calculation == "analytic" and self.L >= 20:
+            print(f"Warning: L={self.L} is too high for analytic calculation.")
+            print(f"Automatically switching to 'shtools' for numerical stability.")
+            harmonics_calculation = "shtools"
         self.harmonics_calculation = harmonics_calculation
 
         self._init_cache(50000)

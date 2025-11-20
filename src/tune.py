@@ -19,13 +19,13 @@ def get_hyperparameter(trial: optuna.trial.Trial, positional_encoding_name):
 
     hparams_pe = {}
     if positional_encoding_name == "slepian":
-        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 40])
+        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 20, 40])
 
     elif positional_encoding_name == "sphericalharmonics":
-        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 40])
+        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 20, 40])
 
     elif positional_encoding_name == "slepianhybrid":
-        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 40])
+        hparams_pe["legendre_polys"] = trial.suggest_categorical("legendre_polys", [10, 20, 40])
             
     hparams_nn = {}
     hparams_nn["dim_hidden"] = trial.suggest_categorical("dim_hidden", [32, 64, 96, 128])
@@ -38,14 +38,14 @@ def get_hyperparameter(trial: optuna.trial.Trial, positional_encoding_name):
     hparams = {}
     hparams.update(hparams_pe)
     hparams.update(hparams_nn)
-    hparams["optimizer"] = hparams_opt
+    hparams.update(hparams_opt)
     
-    hparams['harmonics_calculation'] = "analytic"
+    hparams['harmonics_calculation'] = "shtools"
     
     return hparams
 
 def tune(positional_encoding_name, neural_network_name="siren", dataset="landoceandataset"):
-    n_trials = 50
+    n_trials = 100
     timeout = 4 * 60 * 60 # seconds
 
     # Check GPU availability and set accelerator
@@ -60,17 +60,11 @@ def tune(positional_encoding_name, neural_network_name="siren", dataset="landoce
 
     datamodule = LandOceanDataModule(mode='tune')
     num_classes = 1
-    regression = False
-    presence_only = False
-    loss_bg_weight = False
 
     def objective(trial: optuna.trial.Trial) -> float:
 
         hparams = get_hyperparameter(trial, positional_encoding_name)
         hparams["num_classes"] = num_classes
-        hparams["presence_only_loss"] = presence_only
-        hparams["loss_bg_weight"] = loss_bg_weight
-        hparams["regression"] = regression
 
         spatialencoder = LocationEncoder(
                             positional_encoding_name,
@@ -100,7 +94,6 @@ def tune(positional_encoding_name, neural_network_name="siren", dataset="landoce
         trial.set_user_attr("max_epochs_limit", max_epochs)
 
         return trainer.callback_metrics["val_loss"].item()
-
 
 
     study_name = f"{dataset}-{positional_encoding_name}-{neural_network_name}"
@@ -190,7 +183,6 @@ def compile_summaries(dataset):
         dataset: {
             "dataset": {
                 "num_classes": 1,
-                "regression": False,
                 "num_samples": 5000,
                 "batch_size": 512,
                 "addcoastline": False,
