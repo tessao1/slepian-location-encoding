@@ -24,16 +24,17 @@ def cart2sph(x, y, z):
 
 def get_data_points(N=5000, seed=0, cache=True, sphericaluniform=True, grid=False):
     if grid:
-        cachefilename = DATA_DIR + f"/landoceansdatasetgrid.geojson"
+        cachefilename = DATA_DIR + f"/landoceansdatasetgrid_{int(N/1000)}k.geojson"
+
     else:
-        cachefilename = DATA_DIR + f"/landoceansdataset{seed}.geojson"
+        cachefilename = DATA_DIR + f"/landoceansdataset{seed}_{int(N/1000)}k.geojson"
+
     if os.path.exists(cachefilename) and cache:
         print(f"reading dataset from {cachefilename}. delete file to regenerate...")
         points = gpd.read_file(cachefilename)
     else:
         print(f"generating {cachefilename} from {SHAPEFILEPATH}")
         world = gpd.read_file(SHAPEFILEPATH).dissolve()
-        #world = geopandas.read_file(geopandas.datasets.get_path('naturalearth_lowres')).to_crs(4326).dissolve()
 
         rng = np.random.RandomState(seed)
         if grid:
@@ -76,7 +77,7 @@ def get_data(N=5000, seed=0, grid=False):
     return lonlats, land
 
 class LandOceanDataModule(pl.LightningDataModule):
-    def __init__(self, num_samples=5000, batch_size=100, mode='train'):
+    def __init__(self, num_samples=10000, batch_size=100, mode='train'):
         super().__init__()
         self.num_samples = num_samples
         self.batch_size=batch_size
@@ -97,10 +98,9 @@ class LandOceanDataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.valid_ds, batch_size=self.batch_size, shuffle=False)
-
+    
     def test_dataloader(self):
         return DataLoader(self.evalu_ds, batch_size=self.batch_size, shuffle=False)
-
 
 if __name__ == '__main__':
     points = get_data_points(seed=2, cache=False, grid=True)

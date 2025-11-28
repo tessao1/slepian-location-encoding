@@ -19,9 +19,9 @@ def get_positional_encoding(name, hparams=None):
         )
     elif name == "sphericalharmonics":
 
-        # default to analytic
+        # default to shtools
         if "harmonics_calculation" not in hparams.keys():
-            hparams["harmonics_calculation"] = "analytic"
+            hparams["harmonics_calculation"] = "shtools"
 
         if "harmonics_calculation" in hparams.keys() and hparams['harmonics_calculation'] == "discretized":
             return PE.DiscretizedSphericalHarmonics(legendre_polys=hparams['legendre_polys'])
@@ -29,9 +29,9 @@ def get_positional_encoding(name, hparams=None):
             return PE.SphericalHarmonics(legendre_polys=hparams['legendre_polys'],
                                          harmonics_calculation=hparams['harmonics_calculation'])
     elif name == "slepianhybrid":
-        # default to analytic
+        # default to shtools
         if "harmonics_calculation" not in hparams.keys():
-            hparams["harmonics_calculation"] = "analytic"
+            hparams["harmonics_calculation"] = "shtools"
 
         return PE.SlepianSHHybrid(
             legendre_polys=hparams['legendre_polys'],

@@ -18,7 +18,7 @@ class Slepian(nn.Module, HarmonicsCache):
         super(Slepian, self).__init__()
         self.legendre_polys = legendre_polys
         self.normalization = 'ortho'
-        self.cache_size = 50000
+        self.cache_size = 200000
         self.full_dimension = full_dimension
 
         self._init_cache(self.cache_size)

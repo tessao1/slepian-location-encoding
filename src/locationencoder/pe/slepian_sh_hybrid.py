@@ -23,7 +23,7 @@ class SlepianSHHybrid(nn.Module, HarmonicsCache):
         self.sh_max_degree = sh_max_degree
         self.harmonics_calculation = harmonics_calculation
         
-        self.cache_size = 50000
+        self.cache_size = 200000
         self._init_cache(self.cache_size)
               
     # Create Slepian encoder instance
