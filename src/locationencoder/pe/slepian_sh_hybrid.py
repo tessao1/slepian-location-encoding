@@ -27,7 +27,7 @@ class SlepianSHHybrid(nn.Module, HarmonicsCache):
         self._init_cache(self.cache_size)
               
     # Create Slepian encoder instance
-        print("Creating Slepian component for coastal features...")
+        print("Creating Slepian component for local features...")
         self.slepian_encoder = Slepian(
             legendre_polys=self.legendre_polys,
             full_dimension=False)

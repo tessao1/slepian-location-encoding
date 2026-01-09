@@ -26,7 +26,7 @@ class SphericalHarmonics(nn.Module, HarmonicsCache):
             harmonics_calculation = "shtools"
         self.harmonics_calculation = harmonics_calculation
 
-        self._init_cache(200000)
+        self._init_cache(500000)
 
         if harmonics_calculation == "closed-form":
             self.SH = SH_closed_form

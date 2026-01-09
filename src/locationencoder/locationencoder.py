@@ -10,9 +10,12 @@ from sklearn.metrics import (
     jaccard_score,
     mean_absolute_error
 )
+from locationencoder.pe.utils_mask import CoastlineMask
 
 def get_positional_encoding(name, hparams=None):
-    if name == "slepian":
+    if name == "direct":
+        return PE.Direct()
+    elif name == "slepian":
         return PE.Slepian(
             legendre_polys=hparams['legendre_polys'],
             full_dimension=hparams.get('full_dimension', False)
@@ -35,7 +38,8 @@ def get_positional_encoding(name, hparams=None):
 
         return PE.SlepianSHHybrid(
             legendre_polys=hparams['legendre_polys'],
-            harmonics_calculation=hparams['harmonics_calculation']
+            harmonics_calculation=hparams['harmonics_calculation'],
+            sh_max_degree=hparams.get('sh_max_degree', 5)
         )   
     else:
         raise ValueError(f"{name} not a known positional encoding.")
@@ -138,13 +142,27 @@ class LocationEncoder(pl.LightningModule):
                             "test_MAE":MAE}
             
         else:
-            accuracy = float(accuracy_score(y_true=label.cpu(), y_pred= y_pred))
-            IoU = float(jaccard_score(y_true=label.cpu(),  y_pred = y_pred, average=average, zero_division=0))
+            # Always compute local accuracy using shared coastline mask
+            mask_indices = CoastlineMask.is_in_masked_region(lonlats)
+            
+            local_accuracy = None
+            if mask_indices.sum() > 0:
+                y_pred_masked = y_pred[mask_indices.cpu()]
+                y_masked = label[mask_indices].cpu()
+                
+                local_accuracy = float(accuracy_score(y_true=y_masked, y_pred=y_pred_masked))
+                self.log("test_local_accuracy", local_accuracy, on_step=False, on_epoch=True)
+            
+            # Compute global accuracy on all points
+            accuracy = float(accuracy_score(y_true=label.cpu(), y_pred=y_pred))
+            IoU = float(jaccard_score(y_true=label.cpu(), y_pred=y_pred, average=average, zero_division=0))
             self.log("test_accuracy", accuracy, on_step=False, on_epoch=True)
             self.log("test_IoU", IoU, on_step=False, on_epoch=True)
             
             test_results = {"test_loss":loss,
-                          "test_accuracy":accuracy}
+                          "test_accuracy":accuracy,
+                          "test_IoU":IoU,
+                          "test_local_accuracy":local_accuracy}
 
         return test_results
 

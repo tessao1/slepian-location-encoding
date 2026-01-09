@@ -77,7 +77,7 @@ def get_data(N=5000, seed=0, grid=False):
     return lonlats, land
 
 class LandOceanDataModule(pl.LightningDataModule):
-    def __init__(self, num_samples=10000, batch_size=100, mode='train'):
+    def __init__(self, num_samples=100000, batch_size=100, mode='train'):
         super().__init__()
         self.num_samples = num_samples
         self.batch_size=batch_size

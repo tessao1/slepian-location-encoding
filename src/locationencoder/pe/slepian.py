@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 import pyshtools as pysh
 from .utils_cache import HarmonicsCache
-from scipy.ndimage import binary_dilation, binary_erosion
+from .utils_mask import CoastlineMask
 
 class Slepian(nn.Module, HarmonicsCache):
     def __init__(self, legendre_polys: int = 10, full_dimension: bool = False):
@@ -18,42 +18,21 @@ class Slepian(nn.Module, HarmonicsCache):
         super(Slepian, self).__init__()
         self.legendre_polys = legendre_polys
         self.normalization = 'ortho'
-        self.cache_size = 200000
+        self.cache_size = 500000
         self.full_dimension = full_dimension
-
         self._init_cache(self.cache_size)
-        
         # Initialize Slepian functions
         self._create_localized_slepian()
-        
-        # Set embedding dimension based on number of well-concentrated functions
         self.embedding_dim = self.slepian_obj.nmax
     
-
-    def _create_topography_mask(self):
-        """
-        Create a coastline mask based on Earth topography data
-        """
-        # Load Earth topography
-        topo_coeffs = pysh.datasets.Earth.Earth2014.tbi(lmax=300)
-        topo = topo_coeffs.expand(extend=False)
-        
-        # Create land/ocean mask
-        mask = topo.data > 0
-        
-        # Create coastline mask
-        dilated = binary_dilation(mask, iterations=4)
-        eroded = binary_erosion(mask, iterations=4)
-        coastline_mask = dilated ^ eroded
-        
-        return coastline_mask  
-
-
     def _create_localized_slepian(self):
         """
         Create Slepian functions localized to coastal areas
         """
-        coastline_mask = self._create_topography_mask()
+        coastline_mask, nlat, nlon = CoastlineMask.get_mask()
+        self.coastline_mask = coastline_mask
+        self.mask_nlat = nlat
+        self.mask_nlon = nlon
 
         window = pysh.SHGrid.from_array(coastline_mask.astype(float))
         self.slepian_obj = pysh.Slepian.from_mask(window, lmax=self.legendre_polys)
@@ -83,7 +62,7 @@ class Slepian(nn.Module, HarmonicsCache):
                     if coastline_mask[i, j]:
                         coastline_area += cell_area
     
-            area_fraction = coastline_area / total_area  # This should equal 4π for total sphere
+            area_fraction = coastline_area / total_area
     
             L = self.legendre_polys
             shannon_number = int((L + 1)**2 * area_fraction)
@@ -94,19 +73,25 @@ class Slepian(nn.Module, HarmonicsCache):
             print(f"Coastline area fraction: {area_fraction:.4f}")
             print(f"Set nmax to Shannon number: {shannon_number}")
 
+        self.precomputed_coeffs = []
+        for a in range(self.slepian_obj.nmax):
+            sh = self.slepian_obj.to_shcoeffs(alpha=a, normalization=self.normalization)
+            self.precomputed_coeffs.append(sh)
+        print(f"Pre-computed {len(self.precomputed_coeffs)} Slepian SH coefficients")
+
+    def is_in_masked_region(self, lonlat):
+        """Use coastline mask implementation"""
+        return CoastlineMask.is_in_masked_region(lonlat)
         
-    def _slepian_point_encoding(self, lat, lon, degrees=True, nmax=None):
+    def _slepian_batch_encoding(self, lats, lons, degrees=True, nmax=None):
         """Compute Slepian encoding for a single point"""
         N = self.slepian_obj.nmax if nmax is None else min(nmax, self.slepian_obj.nmax)
-        vals = np.empty(N)
+        n_points = len(lats)
+        vals = np.empty((n_points, N))
         
         for a in range(N):
-            try:
-                sh = self.slepian_obj.to_shcoeffs(alpha=a, normalization=self.normalization)
-                vals[a] = sh.expand(lat=[lat], lon=[lon], degrees=degrees)[0]
-            except Exception as e:
-                print(f"Warning: Failed to compute Slepian function {a} at ({lat}, {lon}): {e}")
-                vals[a] = 0.0    
+            # Use pre-computed coefficients and expand at all points at once
+            vals[:, a] = self.precomputed_coeffs[a].expand(lat=lats, lon=lons, degrees=degrees)  
         return vals
     
     
@@ -134,14 +119,16 @@ class Slepian(nn.Module, HarmonicsCache):
         
         if missing_indices:
             missing_lonlat = lonlat[missing_indices]
+            lons = missing_lonlat[:, 0].cpu().numpy()
+            lats = missing_lonlat[:, 1].cpu().numpy()
+    
+            # Batch computation
+            encodings = self._slepian_batch_encoding(lats, lons, degrees=True, nmax=self.embedding_dim)
+            encodings_tensor = torch.tensor(encodings, device=device, dtype=torch.float32)
             
             for i, orig_idx in enumerate(missing_indices):
-                lon, lat = missing_lonlat[i]
-                encoding = self._slepian_point_encoding(
-                    lat.item(), lon.item(), degrees=True, nmax=self.embedding_dim)
-                encoding_tensor = torch.tensor(encoding, device=device, dtype=torch.float32)
-                Y[orig_idx] = encoding_tensor
-                self._add_to_cache(coord_hashes[orig_idx], encoding_tensor)
-        
+                Y[orig_idx] = encodings_tensor[i]
+                self._add_to_cache(coord_hashes[orig_idx], encodings_tensor[i])
+            
         return Y
-    
+        

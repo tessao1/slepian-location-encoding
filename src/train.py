@@ -30,7 +30,7 @@ torch.set_float32_matmul_precision('high')
 
 def overwrite_hparams_with_args(hparams, args):
     # overwrites some hparams if specified in arguments
-    if "legendre_polys" in hparams.keys() and args.legendre_polys is not None:
+    if  args.legendre_polys is not None:
         hparams["legendre_polys"] = args.legendre_polys
         print(f"using legendre-polys={args.legendre_polys}, as specified in args")
     if "min_radius" in hparams.keys() and args.min_radius is not None:
@@ -48,6 +48,9 @@ def overwrite_hparams_with_args(hparams, args):
     if args.num_samples is not None:
         hparams["num_samples"] = args.num_samples
         print(f"using num_samples={args.num_samples}, as specified in args")
+    if args.sh_max_degree is not None:
+        hparams["sh_max_degree"] = args.sh_max_degree
+        print(f"using sh_max_degree={args.sh_max_degree}, as specified in args")
     return hparams
 
 
@@ -104,6 +107,8 @@ def parse_args():
                              'closed-form uses one equation but is computationally slower (especially for high degrees)' +
                              'discretized pre-computes harmonics on a grid and interpolates these later' +
                              'shtools uses the pyshtools library to compute spherical harmonics')
+    parser.add_argument('--sh-max-degree', default=5, type=int,
+                        help='maximum degree for spherical harmonics in hybrid encoding')
     parser.add_argument('--full-dimension', default=False, type=bool,
                         help='whether to use the full embedding dimension based on area for slepian functions')
     parser.add_argument('--num-samples', default=None, type=int,
@@ -129,64 +134,18 @@ def fit(args):
     hparams = hparams[dataset]
     print(args)
 
-    if args.use_expnamehps:
-        if 'seed' in args.expname:
-            appender_in_yaml = args.expname.split('_seed')[0]
-        else:
-            appender_in_yaml = args.expname
-        key = f"{positional_encoding_name}-{neural_network_name}-{appender_in_yaml}"
-    else:
-        if args.legendre_polys is not None:
-            # Determine full_dimension suffix for slepian
-            if positional_encoding_name == "slepian" and args.full_dimension:
-                full_dim_suffix = "-fulldim"
-            else:
-                full_dim_suffix = ""
-            
-            key = f"{positional_encoding_name}-{neural_network_name}-L{args.legendre_polys}{full_dim_suffix}"
-        else:
-            key = f"{positional_encoding_name}-{neural_network_name}"
-    
+    key = f"{positional_encoding_name}-{neural_network_name}"
+        
     if key in hparams:
         print(f"Using hyperparameters for: {key}")
-        used_key = key
         hparams = hparams[key]
     else:
-        # Try fallback without full_dimension suffix
-        if args.legendre_polys is not None:
-            fallback_key = f"{positional_encoding_name}-{neural_network_name}-L{args.legendre_polys}"
-            if fallback_key in hparams:
-                print(f"Warning: Key '{key}' not found, using '{fallback_key}'")
-                used_key = fallback_key
-                hparams = hparams[fallback_key]
-            else:
-                # Try without L
-                fallback_key = f"{positional_encoding_name}-{neural_network_name}"
-                if fallback_key in hparams:
-                    print(f"Warning: Key '{key}' not found, using '{fallback_key}'")
-                    used_key = fallback_key
-                    hparams = hparams[fallback_key]
-                else:
-                    available_keys = [k for k in hparams.keys() if k != "dataset"]
-                    raise KeyError(
-                        f"Key '{key}' not found in hparams.yaml.\n"
-                        f"Available keys: {available_keys}"
-                    )
-        else:
-            available_keys = [k for k in hparams.keys() if k != "dataset"]
-            raise KeyError(
-                f"Key '{key}' not found in hparams.yaml.\n"
-                f"Available keys: {available_keys}"
-            )
-
-    # Extract legendre_polys from key name if not already in hparams
-    if 'legendre_polys' not in hparams:
-        import re
-        match = re.search(r'-L(\d+)', used_key)
-        if match:
-            hparams['legendre_polys'] = int(match.group(1))
-            print(f"Extracted legendre_polys={hparams['legendre_polys']} from key '{used_key}'")
-
+        available_keys = [k for k in hparams.keys() if k != "dataset"]
+        raise KeyError(
+            f"Key '{key}' not found in hparams.yaml.\n"
+            f"Available keys: {available_keys}"
+        )
+    
     hparams.update(dataset_hparams)
 
     hparams = overwrite_hparams_with_args(hparams, args)
@@ -262,6 +221,7 @@ def fit(args):
         testloss = testresults[0]["test_loss"]
         testaccuracy = testresults[0]["test_accuracy"]
         testiou = testresults[0]["test_IoU"]
+        testlocalaccuracy = testresults[0].get("test_local_accuracy", None)
 
         title = f"{positional_encoding_name:1.8}-{neural_network_name:1.6}"
         resultsfile = f"{parse_resultsdir(args)}/{title}.json".replace(" ", "_").replace("%", "")
@@ -280,6 +240,8 @@ def fit(args):
             train_samples=len(datamodule.train_dataloader().dataset),
             embedding_dim=locationencoder.positional_encoder.embedding_dim
         )
+        if testlocalaccuracy is not None:
+            result["local_accuracy"] = testlocalaccuracy
 
         if logger is not None:
             logger.log_metrics({
