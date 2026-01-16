@@ -29,15 +29,12 @@ class SlepianSHHybrid(nn.Module, HarmonicsCache):
     # Create Slepian encoder instance
         print("Creating Slepian component for local features...")
         self.slepian_encoder = Slepian(
-            legendre_polys=self.legendre_polys,
-            full_dimension=False)
-        self.slepian_dim = self.slepian_encoder.embedding_dim
-        shannon_number = self.slepian_dim
-        
-        print(f"Shannon number from Slepian: {shannon_number}")
+            legendre_polys=self.legendre_polys)
+       
+        print(f"Shannon number from Slepian: {self.slepian_encoder.embedding_dim}")
 
         if sh_max_degree is None:
-                    self.sh_max_degree = self._calculate_sh_degree_from_shannon(shannon_number)
+                    self.sh_max_degree = self._calculate_sh_degree_from_shannon(self.slepian_encoder.embedding_dim)
                     print(f"Auto-calculated sh_max_degree: {self.sh_max_degree}")
         else:
             self.sh_max_degree = sh_max_degree
@@ -48,17 +45,16 @@ class SlepianSHHybrid(nn.Module, HarmonicsCache):
         self.sh_encoder = SphericalHarmonics(
             legendre_polys=self.sh_max_degree, 
             harmonics_calculation=self.harmonics_calculation)
-        self.sh_dim = self.sh_encoder.embedding_dim
         
-        print("Initializing LayerNorm for each branch...")
-        self.norm_slep = nn.LayerNorm(self.slepian_dim)
-        self.norm_sh   = nn.LayerNorm(self.sh_dim)
+        # print("Initializing LayerNorm for each branch...")
+        # self.norm_slep = nn.LayerNorm(self.slepian_encoder.embedding_dim)
+        # self.norm_sh   = nn.LayerNorm(self.sh_encoder.embedding_dim)
         
-        self.embedding_dim = self.slepian_dim + self.sh_dim
+        self.embedding_dim = self.slepian_encoder.embedding_dim + self.sh_encoder.embedding_dim
                 
         print(f"Hybrid encoder initialized:")
-        print(f"  Slepian functions: {self.slepian_dim}")
-        print(f"  Spherical harmonics: {self.sh_dim}")
+        print(f"  Slepian functions: {self.slepian_encoder.embedding_dim}")
+        print(f"  Spherical harmonics: {self.sh_encoder.embedding_dim}")
         print(f"  Total embedding dim: {self.embedding_dim}")
 
     def _calculate_sh_degree_from_shannon(self, shannon_number):
@@ -119,9 +115,9 @@ class SlepianSHHybrid(nn.Module, HarmonicsCache):
             # These two lines call the forward methods of the respective encoders
             sh_encoding = self.sh_encoder(missing_lonlat)  # Shape: (n_missing, sh_dim) 
             slepian_encoding = self.slepian_encoder(missing_lonlat)  # Shape: (n_missing, slepian_dim)
-            # Normalize each branch
-            sh_encoding = self.norm_sh(sh_encoding)
-            slepian_encoding = self.norm_slep(slepian_encoding)        
+            # # Normalize each branch
+            # sh_encoding = self.norm_sh(sh_encoding)
+            # slepian_encoding = self.norm_slep(slepian_encoding)        
 
             for i, orig_idx in enumerate(missing_indices):
                 combined_encoding = torch.cat([slepian_encoding[i],

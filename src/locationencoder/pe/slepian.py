@@ -6,7 +6,7 @@ from .utils_cache import HarmonicsCache
 from .utils_mask import CoastlineMask
 
 class Slepian(nn.Module, HarmonicsCache):
-    def __init__(self, legendre_polys: int = 10, full_dimension: bool = False):
+    def __init__(self, legendre_polys: int = 10):
         """
         Slepian functions for geographic position encoding
         
@@ -15,120 +15,68 @@ class Slepian(nn.Module, HarmonicsCache):
             full_dimension: If True, use full dimension (L+1)^2; 
                             If False, use Shannon number based on coastline area
         """
-        super(Slepian, self).__init__()
+        super().__init__()
         self.legendre_polys = legendre_polys
-        self.normalization = 'ortho'
         self.cache_size = 500000
-        self.full_dimension = full_dimension
         self._init_cache(self.cache_size)
-        # Initialize Slepian functions
+
         self._create_localized_slepian()
-        self.embedding_dim = self.slepian_obj.nmax
-    
+        self.num_modes = int(round(self.slepian.shannon))
+        print(f"Slepian modes (Shannon number): {self.num_modes}")
+        self.embedding_dim = self.num_modes
+        self.coeffs = [
+            self.slepian.to_shcoeffs(alpha=a)
+            for a in range(self.num_modes)
+        ]
+        
     def _create_localized_slepian(self):
-        """
-        Create Slepian functions localized to coastal areas
-        """
-        coastline_mask, nlat, nlon = CoastlineMask.get_mask()
+        """Create Slepian functions localized to the coastlines"""
+        mask_dict, nlat, nlon = CoastlineMask.get_mask(self.legendre_polys)
+        coastline_mask = mask_dict[self.legendre_polys]
         self.coastline_mask = coastline_mask
         self.mask_nlat = nlat
         self.mask_nlon = nlon
 
-        window = pysh.SHGrid.from_array(coastline_mask.astype(float))
-        self.slepian_obj = pysh.Slepian.from_mask(window, lmax=self.legendre_polys)
-        
-        if self.full_dimension:
-            print(f"Using full dimension: nmax = {self.slepian_obj.nmax}")
-            return
-        else:
-            print(f"Calculating embedding dimension based on coastline area...")
-            nlat, nlon = coastline_mask.shape
-            lat_step = np.pi / nlat  # latitude step in radians
-            lon_step = 2 * np.pi / nlon  # longitude step in radians
-    
-            # Create latitude weights (cos(latitude) for spherical area)
-            lats = np.linspace(np.pi/2, -np.pi/2, nlat)  # π/2 to -π/2 (90° to -90°)
-            lat_weights = np.cos(lats)
-    
-            total_area = 0
-            coastline_area = 0
-    
-            for i in range(nlat):
-                for j in range(nlon):
-                    # Area of this grid cell
-                    cell_area = lat_weights[i] * lat_step * lon_step
-                    total_area += cell_area
-            
-                    if coastline_mask[i, j]:
-                        coastline_area += cell_area
-    
-            area_fraction = coastline_area / total_area
-    
-            L = self.legendre_polys
-            shannon_number = int((L + 1)**2 * area_fraction)
-    
-            self.slepian_obj.nmax = shannon_number
-
-            print(f"Precise area calculation:")
-            print(f"Coastline area fraction: {area_fraction:.4f}")
-            print(f"Set nmax to Shannon number: {shannon_number}")
-
-        self.precomputed_coeffs = []
-        for a in range(self.slepian_obj.nmax):
-            sh = self.slepian_obj.to_shcoeffs(alpha=a, normalization=self.normalization)
-            self.precomputed_coeffs.append(sh)
-        print(f"Pre-computed {len(self.precomputed_coeffs)} Slepian SH coefficients")
-
-    def is_in_masked_region(self, lonlat):
-        """Use coastline mask implementation"""
-        return CoastlineMask.is_in_masked_region(lonlat)
-        
-    def _slepian_batch_encoding(self, lats, lons, degrees=True, nmax=None):
-        """Compute Slepian encoding for a single point"""
-        N = self.slepian_obj.nmax if nmax is None else min(nmax, self.slepian_obj.nmax)
-        n_points = len(lats)
-        vals = np.empty((n_points, N))
-        
-        for a in range(N):
-            # Use pre-computed coefficients and expand at all points at once
-            vals[:, a] = self.precomputed_coeffs[a].expand(lat=lats, lon=lons, degrees=degrees)  
-        return vals
-    
+        self.slepian = pysh.Slepian.from_mask(self.coastline_mask, lmax=self.legendre_polys)
     
     def forward(self, lonlat):
         """
-        Forward pass
         Args:
-            lonlat: tensor of shape (batch_size, 2) with [lon, lat] coordinates in degrees
+            lonlat: (N, 2) tensor with [lon, lat] in degrees
+        
         Returns:
-            tensor of shape (batch_size, embedding_dim) with Slepian encodings
+            (N, num_modes) tensor of Slepian features
         """
-        batch_size = lonlat.shape[0]
-        device = lonlat.device
+        lon = lonlat[:, 0].detach().cpu().numpy()
+        lat = lonlat[:, 1].detach().cpu().numpy()
+        lon_360 = np.where(lon < 0.0, lon + 360.0, lon)
         
         coord_hashes = self._hash_coordinates(lonlat)
-        cached_results, missing_indices = self._get_from_cache(coord_hashes, device)
+        cached, missing = self._get_from_cache(coord_hashes, lonlat.device)
         
-        # Initialize output
-        Y = torch.zeros((batch_size, self.embedding_dim), device=device, dtype=torch.float32)
+        results = [None] * len(coord_hashes)
         
-        # Output cached results
-        for idx, cached_result in enumerate(cached_results):
-            if cached_result is not None:
-                Y[idx] = cached_result.to(device)
-        
-        if missing_indices:
-            missing_lonlat = lonlat[missing_indices]
-            lons = missing_lonlat[:, 0].cpu().numpy()
-            lats = missing_lonlat[:, 1].cpu().numpy()
-    
-            # Batch computation
-            encodings = self._slepian_batch_encoding(lats, lons, degrees=True, nmax=self.embedding_dim)
-            encodings_tensor = torch.tensor(encodings, device=device, dtype=torch.float32)
+        if missing:
+            lon_m = lon_360[missing]
+            lat_m = lat[missing]
             
-            for i, orig_idx in enumerate(missing_indices):
-                Y[orig_idx] = encodings_tensor[i]
-                self._add_to_cache(coord_hashes[orig_idx], encodings_tensor[i])
+            computed = np.empty((len(missing), self.num_modes), dtype=np.float32)
             
-        return Y
+            for i, (lo, la) in enumerate(zip(lon_m, lat_m)):
+                for k, sh in enumerate(self.coeffs):
+                    computed[i, k] = sh.expand(lon=float(lo), lat=float(la), degrees=True)
+            
+            computed = torch.from_numpy(computed).to(lonlat.device)
+            
+            for j, idx in enumerate(missing):
+                self._add_to_cache(coord_hashes[idx], computed[j])
+                results[idx] = computed[j]
+        
+        for i, val in enumerate(cached):
+            if val is not None:
+                results[i] = val.to(lonlat.device)
+        
+        return torch.stack(results, dim=0)
+ 
+
         

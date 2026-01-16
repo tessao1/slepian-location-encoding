@@ -18,7 +18,7 @@ class SphericalHarmonics(nn.Module, HarmonicsCache):
         """
         super(SphericalHarmonics, self).__init__()
         self.L, self.M = int(legendre_polys), int(legendre_polys)
-        self.embedding_dim = self.L * self.M  #this equals the full spherical harmonics dimension L²
+        self.embedding_dim = self.L ** 2
         
         if harmonics_calculation == "analytic" and self.L >= 20:
             print(f"Warning: L={self.L} is too high for analytic calculation.")

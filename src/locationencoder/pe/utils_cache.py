@@ -57,19 +57,19 @@ class HarmonicsCache:
             
         return cached_results, missing_indices
 
-    def _add_to_cache(self, coord_hash, Y_row):
+    def _add_to_cache(self, coord_hash, result_value):
         """
         Add computed result to cache with size limiting
         Args:
             coord_hash: hash of coordinate pair
-            Y_row: computed result for this coordinate
+            result: computed result for this coordinate
         """
         # Remove oldest entry if cache is full
         if len(self.cache) >= self.cache_size:
             self.cache.popitem(last=False)  # Remove oldest (FIFO)
         
         # Add new entry
-        self.cache[coord_hash] = Y_row.detach().cpu()
+        self.cache[coord_hash] = result_value.detach().cpu()
 
     def get_cache_stats(self):
         """Return cache statistics"""

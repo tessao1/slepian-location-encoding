@@ -1,2 +1,2 @@
 from .landoceandataset import LandOceanDataModule
-
+from .high_res_landoceandataset import HighResLandOceanDataModule
