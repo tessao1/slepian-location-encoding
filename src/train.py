@@ -63,14 +63,14 @@ def parse_args():
                                                                                     "highreslandoceandataset"
                                                                                     ])
     parser.add_argument('--pe', default=["sphericalharmonics"], type=str, nargs='+', help='positional encoder(s)',
-                        choices=["sphericalharmonics", "slepian", "slepianhybrid"])
+                        choices=["sphericalharmonics", "slepian", "slepianhybrid", "direct"])
     parser.add_argument('--nn', default=["siren"], type=str, nargs='+', help='neural network(s)',
                         choices=["linear", "siren", "fcnet", "mlp"])
 
     # optional configs
     parser.add_argument('--save-model', action="store_true", help='save model checkpoint to results-dir')
     parser.add_argument('--log-wandb', action="store_true", help='log run to wandb')
-    parser.add_argument('--hparams', default="results/tune/landoceandataset/hparams.yaml", type=str, help='hypereparameter yaml')
+    parser.add_argument('--hparams', default="hparams.yaml", type=str, help='hypereparameter yaml')
     parser.add_argument('--results-dir', default="results/train", type=str, help='results directory')
     parser.add_argument('--expname', default=None, type=str,
                         help='experiment name. If specified, saves results in subfolder')
@@ -118,7 +118,7 @@ def parse_args():
                         choices=['fibonacci', 'uniform', 'sphericaluniform'],
                         help='sampling method for generating datasets')
     #High-res landocean dataset visualization
-    parser.add_argument('--visualization-regions', default=['Aegean'], 
+    parser.add_argument('--visualization-regions', default=['Caribbean', 'Indonesia'], 
                         type=str, nargs='+',
                         help='regions to visualize for high-res dataset (used with --matplotlib)')
     parser.add_argument('--visualization-resolution', default=0.03, type=float,
