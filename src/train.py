@@ -177,16 +177,22 @@ def fit(args):
 
     if args.resume_ckpt_from_results_dir:
         resume_checkpoint = find_best_checkpoint(parse_resultsdir(args),
-                                                 f"{positional_encoding_name}-{neural_network_name}",
+                                                 f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}",
                                                  verbose=True)
+        locationencoder = LocationEncoder.load_from_checkpoint(
+            resume_checkpoint,
+            positional_encoding_name=positional_encoding_name,
+            neural_network_name=neural_network_name,
+            hparams=hparams
+        )
+        print(f"Loaded best model from checkpoint: {resume_checkpoint}")
     else:
         resume_checkpoint = None
-
-    locationencoder = LocationEncoder(
-        positional_encoding_name,
-        neural_network_name,
-        hparams=hparams
-    )
+        locationencoder = LocationEncoder(
+            positional_encoding_name,
+            neural_network_name,
+            hparams=hparams
+        )
 
     timer = Timer()
     callbacks = [timer]
@@ -195,7 +201,7 @@ def fit(args):
         callbacks += [ModelCheckpoint(
             dirpath=parse_resultsdir(args),
             monitor='val_loss',
-            filename=f"{positional_encoding_name}-{neural_network_name}" + '-{val_loss:.2f}',
+            filename=f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}" + '-{val_loss:.2f}',
             save_last=False
         )]
 
@@ -230,10 +236,28 @@ def fit(args):
         logger=logger,
         precision=32)
 
-    trainer.fit(model=locationencoder,
-                datamodule=datamodule,
-                ckpt_path=resume_checkpoint
-                )
+    if args.resume_ckpt_from_results_dir:
+        print("Skipping training - using loaded checkpoint for evaluation only")
+    else:
+        trainer.fit(model=locationencoder,
+                    datamodule=datamodule,
+                    ckpt_path=resume_checkpoint
+                    )
+        
+    if args.save_model:
+        best_checkpoint = find_best_checkpoint(parse_resultsdir(args),
+                                            f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}",
+                                            verbose=True)
+        if best_checkpoint is not None:
+            print(f"\nLoading best checkpoint for evaluation: {best_checkpoint}")
+            locationencoder = LocationEncoder.load_from_checkpoint(
+                best_checkpoint,
+                positional_encoding_name=positional_encoding_name,
+                neural_network_name=neural_network_name,
+                hparams=hparams
+            )
+        else:
+            print("Warning: No checkpoint found, using model from last epoch")
     # Evaluation and visualization
     if dataset == "highreslandoceandataset":
         # High-res dataset evaluation
