@@ -102,3 +102,9 @@ highreslandoceandataset:
     num_layers: 3
     wd: 0.0
     max_epochs: 500
+  wavelets-mlp:
+    dim_hidden: 256
+    lr: 0.001
+    num_layers: 3
+    wd: 0.0
+    max_epochs: 500

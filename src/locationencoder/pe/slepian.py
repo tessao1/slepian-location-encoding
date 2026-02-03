@@ -17,6 +17,7 @@ class Slepian(nn.Module, HarmonicsCache):
         """
         super().__init__()
         self.legendre_polys = legendre_polys
+        self.normalization = 'ortho'
         self.cache_size = 500000
         self._init_cache(self.cache_size)
 
@@ -25,7 +26,7 @@ class Slepian(nn.Module, HarmonicsCache):
         print(f"Slepian modes (Shannon number): {self.num_modes}")
         self.embedding_dim = self.num_modes
         self.coeffs = [
-            self.slepian.to_shcoeffs(alpha=a)
+            self.slepian.to_shcoeffs(alpha=a, normalization=self.normalization)
             for a in range(self.num_modes)
         ]
         

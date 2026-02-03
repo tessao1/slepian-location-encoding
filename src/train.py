@@ -63,7 +63,7 @@ def parse_args():
                                                                                     "highreslandoceandataset"
                                                                                     ])
     parser.add_argument('--pe', default=["sphericalharmonics"], type=str, nargs='+', help='positional encoder(s)',
-                        choices=["sphericalharmonics", "slepian", "slepianhybrid", "direct"])
+                        choices=["sphericalharmonics", "slepian", "slepianhybrid", "direct", "wavelets"])
     parser.add_argument('--nn', default=["siren"], type=str, nargs='+', help='neural network(s)',
                         choices=["linear", "siren", "fcnet", "mlp"])
 
@@ -118,7 +118,7 @@ def parse_args():
                         choices=['fibonacci', 'uniform', 'sphericaluniform'],
                         help='sampling method for generating datasets')
     #High-res landocean dataset visualization
-    parser.add_argument('--visualization-regions', default=['Caribbean', 'Indonesia'], 
+    parser.add_argument('--visualization-regions', default=['Aegean', 'Caribbean', 'Indonesia'], 
                         type=str, nargs='+',
                         help='regions to visualize for high-res dataset (used with --matplotlib)')
     parser.add_argument('--visualization-resolution', default=0.03, type=float,

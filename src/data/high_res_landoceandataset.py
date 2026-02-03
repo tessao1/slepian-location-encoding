@@ -41,9 +41,9 @@ def get_data_points(n=5000, seed=0, cache=True, sampling_method='fibonacci', spl
         seed: random seed
         cache: whether to cache/load from cache
         sampling_method: 'fibonacci', 'uniform', or 'sphericaluniform'
-        split: 'train', 'test_uniform', 'test_coastline', 'test_island'
+        split: 'train', 'validation', 'test_uniform', 'test_coastline', 'test_island'
     """
-    cachefilename = os.path.join(DATA_DIR, f"highres_landocean_{split}_{sampling_method}_{seed}_{int(n/1000)}k.csv")
+    cachefilename = os.path.join(DATA_DIR, f"highres_landocean_{split}_{int(n/1000)}k.csv")
     
     if os.path.exists(cachefilename) and cache:
         print(f"reading dataset from {cachefilename}. delete file to regenerate...")
@@ -131,7 +131,7 @@ def get_data_points(n=5000, seed=0, cache=True, sampling_method='fibonacci', spl
             return np.array(lons[:n_samples]), np.array(lats[:n_samples])
         
         # Generate points based on split and sampling method
-        if split == 'train':
+        if split == 'train' or split == 'validation':
             print(f"\nGenerating training set...")
             # Mixed sampling: 40% uniform, 30% coastal, 30% island
             n_uniform = int(n * 0.4)
@@ -225,7 +225,7 @@ def get_data(n=5000, seed=0, sampling_method='fibonacci', split='train'):
     return lonlats, land
 
 class HighResLandOceanDataModule(pl.LightningDataModule):
-    def __init__(self, num_samples=20000, batch_size=256, mode='train', sampling_method='fibonacci'):
+    def __init__(self, num_samples=100000, batch_size=256, mode='train', sampling_method='fibonacci'):
         """
         High-resolution land-ocean classification DataModule
         
@@ -256,7 +256,7 @@ class HighResLandOceanDataModule(pl.LightningDataModule):
             self.num_samples,
             seed=val_seed,
             sampling_method=self.sampling_method,
-            split='train'
+            split='validation'
         ))
         
         # Test datasets
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     print("Testing high-resolution land-ocean dataset generation...")
     
     # Generate all datasets
-    for split in ['train', 'test_uniform', 'test_coastline', 'test_island']:
+    for split in ['train', 'validation', 'test_uniform', 'test_coastline', 'test_island']:
         df = get_data_points(n=1000, seed=42, cache=False, sampling_method='fibonacci', split=split)
         print(f"\n{split}: {len(df)} points")
         print(f"  Land: {df['label'].sum()}, Ocean: {(df['label']==0).sum()}")

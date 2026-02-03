@@ -6,28 +6,29 @@ config = {
     'dataset': 'highreslandoceandataset',
     'nn': 'mlp',
     'sampling_method': 'fibonacci',
-    'num_samples': 10000,
+    'num_samples': 100000,
     'max_epochs': 500,
-    'sh_max_degree': 10
+    'legendre-polys': 30
 }
 
 # Values to loop through
-pe_config = {
-    'sphericalharmonics': [40],
-    # 'slepian': [40, 80, 120],
-    'slepianhybrid': [40, 80, 120]
-    
-}
+pe_list = ['sphericalharmonics', 'slepian', 'slepianhybrid', 'wavelets', 'direct']
+sh_max_degrees = [5, 10, 15]
 
-total_experiments = sum(len(values) for values in pe_config.values())
+total_experiments = 0
+for pe in pe_list:
+    if pe == 'slepianhybrid':
+        total_experiments += len(sh_max_degrees)
+    else:
+        total_experiments += 1
 current_experiment = 0
 
-for pe, legendre_polys_values in pe_config.items():
-    for L in legendre_polys_values:
+for pe in pe_list:
+    if pe in ['wavelets', 'direct']:
         current_experiment += 1
         print("=" * 60)
         print(f"Experiment {current_experiment}/{total_experiments}")
-        print(f"PE: {pe}, Legendre Polys: {L}")
+        print(f"PE: {pe}")
         print("=" * 60)
         
         cmd = [
@@ -35,24 +36,87 @@ for pe, legendre_polys_values in pe_config.items():
             '--dataset', config['dataset'],
             '--pe', pe,
             '--nn', config['nn'],
-            '--legendre-polys', str(L),
-            '--sh-max-degree', str(config['sh_max_degree']),
             '--sampling-method', config['sampling_method'],
             '--num-samples', str(config['num_samples']),
             '--max-epochs', str(config['max_epochs']),
-            '--matplotlib',
-            '--log-wandb',
             '--save-model',
+            '--matplotlib',
+            # '--resume-ckpt-from-results-dir',
+            '--log-wandb',
             '--seed', '42'
         ]
         
         result = subprocess.run(cmd)
         
         if result.returncode != 0:
-            print(f"Error: Training failed for PE={pe}, legendre-polys={L}")
+            print(f"Error: Training failed for PE={pe}")
             sys.exit(1)
         
-        print(f"✓ Completed PE={pe}, legendre-polys={L}\n")
+        print(f"✓ Completed PE={pe}\n")
+    
+    elif pe == 'slepianhybrid':
+        for sh_degree in sh_max_degrees:
+            current_experiment += 1
+            print("=" * 60)
+            print(f"Experiment {current_experiment}/{total_experiments}")
+            print(f"PE: {pe}, SH Max Degree: {sh_degree}")
+            print("=" * 60)
+            
+            cmd = [
+                sys.executable, 'train.py',
+                '--dataset', config['dataset'],
+                '--pe', pe,
+                '--nn', config['nn'],
+                '--legendre-polys', str(config['legendre-polys']),
+                '--sh-max-degree', str(sh_degree),
+                '--sampling-method', config['sampling_method'],
+                '--num-samples', str(config['num_samples']),
+                '--max-epochs', str(config['max_epochs']),
+                '--save-model',
+                '--matplotlib',
+                # '--resume-ckpt-from-results-dir',
+                '--log-wandb',
+                '--seed', '42'
+            ]
+            
+            result = subprocess.run(cmd)
+            
+            if result.returncode != 0:
+                print(f"Error: Training failed for PE={pe}, sh-max-degree={sh_degree}")
+                sys.exit(1)
+            
+            print(f"✓ Completed PE={pe}, sh-max-degree={sh_degree}\n")
+    
+    else:
+        current_experiment += 1
+        print("=" * 60)
+        print(f"Experiment {current_experiment}/{total_experiments}")
+        print(f"PE: {pe}")
+        print("=" * 60)
+        
+        cmd = [
+            sys.executable, 'train.py',
+            '--dataset', config['dataset'],
+            '--pe', pe,
+            '--nn', config['nn'],
+            '--legendre-polys', str(config['legendre-polys']),
+            '--sampling-method', config['sampling_method'],
+            '--num-samples', str(config['num_samples']),
+            '--max-epochs', str(config['max_epochs']),
+            '--save-model',
+            '--matplotlib',
+            # '--resume-ckpt-from-results-dir',
+            '--log-wandb',
+            '--seed', '42'
+        ]
+        
+        result = subprocess.run(cmd)
+        
+        if result.returncode != 0:
+            print(f"Error: Training failed for PE={pe}")
+            sys.exit(1)
+        
+        print(f"✓ Completed PE={pe}, legendre-polys={config['legendre-polys']}\n")
 
 print("=" * 60)
 print("All experiments completed!")

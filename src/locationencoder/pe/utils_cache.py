@@ -20,13 +20,12 @@ class HarmonicsCache:
         Returns:
             tuple of hashes, one per coordinate pair
         """
-        # Convert to numpy and create hash for each coordinate pair
+        # Create hash for each coordinate pair
         lonlat_np = lonlat.detach().cpu().numpy()
         hashes = []
         for coord in lonlat_np:
             # Round to reduce cache misses from floating point precision
             coord_rounded = tuple(np.round(coord, decimals=6))
-            # Create hash from rounded coordinates
             coord_hash = hash(coord_rounded)
             hashes.append(coord_hash)
         return tuple(hashes)
@@ -64,11 +63,9 @@ class HarmonicsCache:
             coord_hash: hash of coordinate pair
             result: computed result for this coordinate
         """
-        # Remove oldest entry if cache is full
         if len(self.cache) >= self.cache_size:
-            self.cache.popitem(last=False)  # Remove oldest (FIFO)
+            self.cache.popitem(last=False)  # Remove oldest
         
-        # Add new entry
         self.cache[coord_hash] = result_value.detach().cpu()
 
     def get_cache_stats(self):

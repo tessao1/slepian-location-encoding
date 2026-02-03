@@ -26,9 +26,9 @@ def get_positional_encoding(name, hparams=None):
             legendre_polys=hparams['legendre_polys'])
     elif name == "sphericalharmonics":
 
-        # default to shtools
+        # default to analytical
         if "harmonics_calculation" not in hparams.keys():
-            hparams["harmonics_calculation"] = "shtools"
+            hparams["harmonics_calculation"] = "analytic"
 
         if "harmonics_calculation" in hparams.keys() and hparams['harmonics_calculation'] == "discretized":
             return PE.DiscretizedSphericalHarmonics(legendre_polys=hparams['legendre_polys'])
@@ -36,15 +36,17 @@ def get_positional_encoding(name, hparams=None):
             return PE.SphericalHarmonics(legendre_polys=hparams['legendre_polys'],
                                          harmonics_calculation=hparams['harmonics_calculation'])
     elif name == "slepianhybrid":
-        # default to shtools
+        # default to analytical
         if "harmonics_calculation" not in hparams.keys():
-            hparams["harmonics_calculation"] = "shtools"
+            hparams["harmonics_calculation"] = "analytic"
 
         return PE.SlepianSHHybrid(
             legendre_polys=hparams['legendre_polys'],
             harmonics_calculation=hparams['harmonics_calculation'],
             sh_max_degree=hparams.get('sh_max_degree', 5)
-        )   
+        )
+    elif name == "wavelets":
+        return PE.Wavelets() 
     else:
         raise ValueError(f"{name} not a known positional encoding.")
 
