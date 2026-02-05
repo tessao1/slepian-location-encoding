@@ -7,7 +7,7 @@ config = {
     'nn': 'mlp',
     'sampling_method': 'fibonacci',
     'num_samples': 100000,
-    'max_epochs': 500,
+    'max_epochs': 200,
     'legendre-polys': 30
 }
 

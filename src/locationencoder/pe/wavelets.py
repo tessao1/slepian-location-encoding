@@ -10,7 +10,7 @@ import math
 
 from .base_encoder import BaseLocationEncoder
 from .get_mhat import spherical_wavelet_family
-from utils_cache import HarmonicsCache
+from .utils_cache import HarmonicsCache
 
 
 def fibonacci_sphere(num_points):

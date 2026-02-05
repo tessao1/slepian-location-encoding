@@ -28,6 +28,14 @@ import random
 
 torch.set_float32_matmul_precision('high')
 
+def get_model_name(positional_encoding_name, neural_network_name, legendre_polys, sh_max_degree=None):
+    """Generate consistent model name based on encoder type"""
+    if positional_encoding_name == "slepianhybrid":
+        return f"{positional_encoding_name}-{neural_network_name}-{legendre_polys}-sh{sh_max_degree}"
+    else:
+        return f"{positional_encoding_name}-{neural_network_name}-{legendre_polys}"
+
+
 def overwrite_hparams_with_args(hparams, args):
     # overwrites some hparams if specified in arguments
     if  args.legendre_polys is not None:
@@ -101,7 +109,7 @@ def parse_args():
     # overwrite certain hparams
     parser.add_argument('--legendre-polys', default=None, type=int)
     parser.add_argument('--min-radius', default=None, type=float)
-    parser.add_argument('--harmonics-calculation', default="shtools", type=str,
+    parser.add_argument('--harmonics-calculation', default="analytic", type=str,
                         choices=["analytic", "closed-form", "discretized", "shtools"],
                         help='calculation of spherical harmonics: ' +
                              'analytic uses pre-computed equations. This is exact, but works only up to degree 50, ' +
@@ -161,6 +169,13 @@ def fit(args):
     hparams = overwrite_hparams_with_args(hparams, args)
     hparams = set_default_if_unset(hparams, "max_radius", 360)
 
+    model_name = get_model_name(
+        positional_encoding_name, 
+        neural_network_name, 
+        args.legendre_polys,
+        args.sh_max_degree if positional_encoding_name == "slepianhybrid" else None
+    )
+
     if args.dataset == "highreslandoceandataset":
         hparams["use_highres_metrics"] = True
         hparams["num_classes"] = 1  # Binary classification
@@ -177,7 +192,7 @@ def fit(args):
 
     if args.resume_ckpt_from_results_dir:
         resume_checkpoint = find_best_checkpoint(parse_resultsdir(args),
-                                                 f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}",
+                                                 model_name,
                                                  verbose=True)
         locationencoder = LocationEncoder.load_from_checkpoint(
             resume_checkpoint,
@@ -201,13 +216,13 @@ def fit(args):
         callbacks += [ModelCheckpoint(
             dirpath=parse_resultsdir(args),
             monitor='val_loss',
-            filename=f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}" + '-{val_loss:.2f}',
+            filename=model_name + '-{val_loss:.2f}',
             save_last=False
         )]
 
     if args.log_wandb:
         logger = WandbLogger(project="slepian-location-encoding",
-                             name=f"{args.dataset}/{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}")
+                             name=f"{args.dataset}/{model_name}")
     else:
         logger = None
 
@@ -246,7 +261,7 @@ def fit(args):
         
     if args.save_model:
         best_checkpoint = find_best_checkpoint(parse_resultsdir(args),
-                                            f"{positional_encoding_name}-{neural_network_name}-{args.legendre_polys}",
+                                            model_name,
                                             verbose=True)
         if best_checkpoint is not None:
             print(f"\nLoading best checkpoint for evaluation: {best_checkpoint}")
@@ -268,7 +283,7 @@ def fit(args):
         test_coastline = testresults[1] if len(testresults) > 1 else {}
         test_island = testresults[2] if len(testresults) > 2 else {}
 
-        title = f"{positional_encoding_name:1.8}-{neural_network_name:1.6}-{args.legendre_polys}"
+        title = model_name
         resultsfile = f"{parse_resultsdir(args)}/{title}.json".replace(" ", "_").replace("%", "")
         os.makedirs(os.path.dirname(resultsfile), exist_ok=True)
 

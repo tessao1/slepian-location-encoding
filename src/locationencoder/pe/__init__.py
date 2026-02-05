@@ -3,3 +3,5 @@ from .discretized_spherical_harmonics import DiscretizedSphericalHarmonics
 from .direct import Direct
 from .slepian import Slepian
 from .slepian_sh_hybrid import SlepianSHHybrid
+from .wavelets import Wavelets
+from .direct import Direct
