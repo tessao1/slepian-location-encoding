@@ -58,7 +58,7 @@ except ImportError:
 from spherical_harmonics_ylm import SH as SH_analytic
 
 # Import nn module for architecture selection
-from nn import build_indexed_location_model
+from mss_nn import build_indexed_location_model
 
 
 # =============================================================================
