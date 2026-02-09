@@ -366,9 +366,10 @@ class LocationRegressor(nn.Module):
 
 def load_mss_data(data_path: str, verbose: bool = True) -> Dict[str, np.ndarray]:
     """Load MSS data from DRF Experiment 1."""
-    exp1_dir = os.path.join(data_path, "exp1")
+    data_path = Path(data_path)
+    exp1_dir = data_path / "exp1"
 
-    hdf5_path = os.path.join(exp1_dir, "along_track_sample_from_mss_ground_ABC.h5")
+    hdf5_path = exp1_dir / "along_track_sample_from_mss_ground_ABC.h5"
     obs_data = pd.read_hdf(hdf5_path, "data")
 
     if verbose:

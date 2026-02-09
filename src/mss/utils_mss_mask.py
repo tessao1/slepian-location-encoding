@@ -34,8 +34,8 @@ class ArcticOceanMask:
         ocean = gpd.read_file("https://naciscdn.org/naturalearth/10m/physical/ne_10m_ocean.zip")
         
         # Create grid matching pyshtools DHGrid convention
-        nlat = 2 * lmax + 1
-        nlon = 2 * (2 * lmax + 1)
+        nlat = 3 * lmax + 1
+        nlon = 2 * nlat - 1  # DHG grid convention
         
         lats = np.linspace(90, -90, nlat)
         lons = np.linspace(0, 360, nlon, endpoint=False)
