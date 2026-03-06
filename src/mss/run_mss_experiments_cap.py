@@ -17,7 +17,7 @@ ROOT_DIR = SRC_DIR.parent
 # Data path (must be set by user)
 DATA_PATH = os.environ.get(
     "MSS_DATA_PATH",
-    "/scratch/local/arra4944_images/drf/Experiment_data/Experiment_data"
+    "C:/repos/slepian-location-encoding/slepian-location-encoding/src/datasets/Experiment_data"
 )
 
 if not os.path.isdir(DATA_PATH):
@@ -45,7 +45,7 @@ NUM_WORKERS = 2
 LABEL_FRACS = "1.0"
 
 # Slepian parameters
-L_GLOBAL = 10
+L_GLOBAL = [0, 5, 10, 15]
 CAP_RADIUS = 25.0
 LAMBDA_THRESH = 0.05
 
@@ -54,67 +54,42 @@ print("=" * 38)
 
 # Slepian experiments
 for arch in ARCHS:
-    for L in [40, 80, 120]:
-        # Calculate num_modes (Shannon number)
-        theta_rad = CAP_RADIUS * np.pi / 180.0
-        shannon = int((L + 1)**2 * (1 - np.cos(theta_rad)) / 2)
-        num_modes = min(shannon, (L + 1)**2)
-        
-        print(f"-> Slepian L={L}, arch={arch} (modes={num_modes})")
-        
-        cmd = [
-            sys.executable,
-            str(PARENT_DIR / "train_mss_slepian.py"),
-            "--data-path", DATA_PATH,
-            "--L-global", str(L_GLOBAL),
-            "--L-slepian", str(L),
-            "--cap-radius", str(CAP_RADIUS),
-            "--num-modes", str(num_modes),
-            "--lambda-thresh", str(LAMBDA_THRESH),
-            "--arch", arch,
-            "--batch-size", str(BATCH_SIZE),
-            "--epochs", str(EPOCHS),
-            "--patience", str(PATIENCE),
-            "--lr", "1e-3",
-            "--hidden-dim", "128",
-            "--dropout", "0.1",
-            "--num-workers", str(NUM_WORKERS),
-            "--label-fracs", LABEL_FRACS,
-            "--n-runs", str(N_RUNS),
-            "--seed", "42",
-            "--cache-dir", str(CACHE_DIR),
-            "--csv-path", str(RESULTS_DIR / f"slepian_L{L}_{arch}.csv"),
-            "--fig-dir", str(FIGURES_DIR / f"slepian_L{L}_{arch}")
-        ]
-        
-        subprocess.run(cmd, check=True)
+    for L in [40]:
+        for l in L_GLOBAL:
+            # Calculate num_modes (Shannon number)
+            theta_rad = CAP_RADIUS * np.pi / 180.0
+            shannon = int((L + 1)**2 * (1 - np.cos(theta_rad)) / 2)
+            num_modes = min(shannon, (L + 1)**2)
+            
+            print(f"-> Slepian L={L}, arch={arch} (modes={num_modes})")
+            
+            cmd = [
+                sys.executable,
+                str(PARENT_DIR / "mss/train_mss_slepian.py"),
+                "--data-path", DATA_PATH,
+                "--L-global", str(l),
+                "--L-slepian", str(L),
+                "--cap-radius", str(CAP_RADIUS),
+                "--num-modes", str(num_modes),
+                "--lambda-thresh", str(LAMBDA_THRESH),
+                "--arch", arch,
+                "--batch-size", str(BATCH_SIZE),
+                "--epochs", str(EPOCHS),
+                "--patience", str(PATIENCE),
+                "--lr", "1e-3",
+                "--hidden-dim", "128",
+                "--dropout", "0.1",
+                "--num-workers", str(NUM_WORKERS),
+                "--label-fracs", LABEL_FRACS,
+                "--n-runs", str(N_RUNS),
+                "--seed", "42",
+                "--cache-dir", str(CACHE_DIR),
+                "--csv-path", str(RESULTS_DIR / f"slepian_cap_L{L}_l{l}_{arch}.csv"),
+                "--fig-dir", str(FIGURES_DIR / f"slepian_cap_L{L}_l{l}_{arch}")
+            ]
+            
+            subprocess.run(cmd, check=True)
 
-# Vanilla SH experiments
-for arch in ARCHS:
-    for L in [40, 80, 120]:
-        print(f"-> Vanilla SH L={L}, arch={arch}")
-        
-        cmd = [
-            sys.executable,
-            str(PARENT_DIR / "train_mss_sh_vanilla.py"),
-            "--data-path", DATA_PATH,
-            "--L", str(L),
-            "--arch", arch,
-            "--batch-size", str(BATCH_SIZE),
-            "--epochs", str(EPOCHS),
-            "--patience", str(PATIENCE),
-            "--lr", "1e-3",
-            "--hidden-dim", "128",
-            "--dropout", "0.1",
-            "--num-workers", str(NUM_WORKERS),
-            "--label-fracs", LABEL_FRACS,
-            "--n-runs", str(N_RUNS),
-            "--seed", "42",
-            "--csv-path", str(RESULTS_DIR / f"vanilla_sh_L{L}_{arch}.csv"),
-            "--fig-dir", str(FIGURES_DIR / f"vanilla_sh_L{L}_{arch}")
-        ]
-        
-        subprocess.run(cmd, check=True)
 
 # Aggregate results
 csv_files = glob(str(RESULTS_DIR / "*.csv"))
@@ -122,12 +97,12 @@ csv_files = [f for f in csv_files if 'aggregated' not in f]
 
 if csv_files:
     df = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=True)
-    aggregated_path = RESULTS_DIR / "aggregated_results.csv"
+    aggregated_path = RESULTS_DIR / "aggregated_results_hybrid_cap.csv"
     df.to_csv(aggregated_path, index=False)
-    print(f"Aggregated {len(csv_files)} files -> aggregated_results.csv")
+    print(f"Aggregated {len(csv_files)} files -> aggregated_results_hybrid_cap.csv")
     
     # Remove individual CSV files after aggregation
     for f in csv_files:
         os.remove(f)
 
-print(f"Done. Results: {RESULTS_DIR / 'aggregated_results.csv'}")
+print(f"Done. Results: {RESULTS_DIR / 'aggregated_results_hybrid_cap.csv'}")

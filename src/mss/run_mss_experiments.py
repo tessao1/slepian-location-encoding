@@ -22,7 +22,7 @@ def main():
     # Data path (must be set by user or via environment variable)
     data_path = os.environ.get(
         'MSS_DATA_PATH', 
-        r"C:\slepian-location-encoding\Experiment_data\Experiment_data"
+        r"C:/repos/slepian-location-encoding/slepian-location-encoding/src/datasets/Experiment_data"
     )
     
     if not os.path.isdir(data_path):
@@ -41,15 +41,15 @@ def main():
     
     # Training parameters
     archs = ["mlp"]  # Can expand to: ["mlp", "resmlp", "siren", "glu"]
-    n_runs = 2
+    n_runs = 1
     epochs = 200
-    batch_size = 2048
+    batch_size = 1024
     patience = 30
     num_workers = 2
     label_fracs = "1.0"
     
     # Slepian parameters
-    l_global = 10
+    l_global = [0, 5, 10, 15]
     lambda_thresh = 0.05
     lat_min = 65.0
     
@@ -58,71 +58,41 @@ def main():
     
     # Slepian experiments
     for arch in archs:
-        for L in [40, 80, 120]:
+        for L in [40]:
+            for l in l_global:
             
-            print(f"-> Slepian L={L}, arch={arch})")
-            
-            cmd = [
-                sys.executable,
-                str(parent_dir / "train_mss_slepian_masked.py"),
-                "--data-path", data_path,
-                "--L-global", str(l_global),
-                "--L-slepian", str(L),
-                "--lat-min", str(lat_min),
-                "--lambda-thresh", str(lambda_thresh),
-                "--arch", arch,
-                "--batch-size", str(batch_size),
-                "--epochs", str(epochs),
-                "--patience", str(patience),
-                "--lr", "1e-3",
-                "--hidden-dim", "128",
-                "--dropout", "0.1",
-                "--num-workers", str(num_workers),
-                "--label-fracs", label_fracs,
-                "--n-runs", str(n_runs),
-                "--seed", "42",
-                "--cache-dir", str(cache_dir),
-                "--csv-path", str(results_dir / f"slepian_L{L}_{arch}.csv"),
-                "--fig-dir", str(figures_dir / f"slepian_L{L}_{arch}"),
-            ]
-            
-            try:
-                subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error running command: {e}")
-                sys.exit(1)
-    
-    # Vanilla SH experiments
-    for arch in archs:
-        for L in [10, 40]:
-            print(f"-> Vanilla SH L={L}, arch={arch}")
-            
-            cmd = [
-                sys.executable,
-                str(parent_dir / "train_mss_sh_vanilla.py"),
-                "--data-path", data_path,
-                "--L", str(L),
-                "--arch", arch,
-                "--batch-size", str(batch_size),
-                "--epochs", str(epochs),
-                "--patience", str(patience),
-                "--lr", "1e-3",
-                "--hidden-dim", "128",
-                "--dropout", "0.1",
-                "--num-workers", str(num_workers),
-                "--label-fracs", label_fracs,
-                "--n-runs", str(n_runs),
-                "--seed", "42",
-                "--csv-path", str(results_dir / f"vanilla_sh_L{L}_{arch}.csv"),
-                "--fig-dir", str(figures_dir / f"vanilla_sh_L{L}_{arch}"),
-            ]
-            
-            try:
-                subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error running command: {e}")
-                sys.exit(1)
-    
+                print(f"-> Slepian L={L}, lglobal={l}, arch={arch})")
+                
+                cmd = [
+                    sys.executable,
+                    str(parent_dir / "mss/train_mss_slepian_masked.py"),
+                    "--data-path", data_path,
+                    "--L-global", str(l),
+                    "--L-slepian", str(L),
+                    "--lat-min", str(lat_min),
+                    "--lambda-thresh", str(lambda_thresh),
+                    "--arch", arch,
+                    "--batch-size", str(batch_size),
+                    "--epochs", str(epochs),
+                    "--patience", str(patience),
+                    "--lr", "1e-3",
+                    "--hidden-dim", "128",
+                    "--dropout", "0.1",
+                    "--num-workers", str(num_workers),
+                    "--label-fracs", label_fracs,
+                    "--n-runs", str(n_runs),
+                    "--seed", "42",
+                    "--cache-dir", str(cache_dir),
+                    "--csv-path", str(results_dir / f"slepian_mask_L{L}_l{l}_{arch}.csv"),
+                    "--fig-dir", str(figures_dir / f"slepian_mask_L{L}_l{l}_{arch}"),
+                ]
+                
+                try:
+                    subprocess.run(cmd, check=True)
+                except subprocess.CalledProcessError as e:
+                    print(f"Error running command: {e}")
+                    sys.exit(1)
+       
     # Aggregate results
     print("\nAggregating results...")
     csv_files = glob(str(results_dir / "*.csv"))
@@ -131,15 +101,15 @@ def main():
     if csv_files:
         dfs = [pd.read_csv(f) for f in csv_files]
         df = pd.concat(dfs, ignore_index=True)
-        output_path = results_dir / "aggregated_results.csv"
+        output_path = results_dir / "aggregated_results_hybrid_mask.csv"
         df.to_csv(output_path, index=False)
-        print(f"Aggregated {len(csv_files)} files -> aggregated_results.csv")
+        print(f"Aggregated {len(csv_files)} files -> aggregated_results_hybrid_mask.csv")
         
         # Remove individual CSV files
         for f in csv_files:
             os.remove(f)
     
-    print(f"\nDone. Results: {results_dir / 'aggregated_results.csv'}")
+    print(f"\nDone. Results: {results_dir / 'aggregated_results_hybrid_mask.csv'}")
 
 if __name__ == "__main__":
     main()

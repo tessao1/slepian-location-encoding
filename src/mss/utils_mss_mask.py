@@ -33,12 +33,11 @@ class ArcticOceanMask:
         # Load ocean polygons from Natural Earth
         ocean = gpd.read_file("https://naciscdn.org/naturalearth/10m/physical/ne_10m_ocean.zip")
         
-        # Create grid matching pyshtools DHGrid convention
-        nlat = 3 * lmax + 1
-        nlon = 2 * nlat - 1  # DHG grid convention
-        
-        lats = np.linspace(90, -90, nlat)
-        lons = np.linspace(0, 360, nlon, endpoint=False)
+        grid = pysh.SHGrid.from_zeros(lmax=lmax)
+
+        nlat, nlon = grid.nlat, grid.nlon
+        lats = grid.lats()
+        lons = grid.lons()
         
         mask = np.zeros((nlat, nlon), dtype=bool)
         
@@ -100,7 +99,7 @@ def visualize_arctic_mask(lmax: int = 120, lat_min: float = 65.0, savepath: str 
                       cmap='Blues', alpha=0.6, vmin=0, vmax=1,
                       shading='auto')
     
-    plt.colorbar(im, ax=ax, label='Ocean (1) / Land (0)', shrink=0.6)
+    plt.colorbar(im, ax=ax, label='Outside mask (0) / Within mask (1)', shrink=0.6)
     ax.set_title(f'Arctic Ocean Mask (lat ≥ {lat_min}°N, L={lmax})')
     
     if savepath:
