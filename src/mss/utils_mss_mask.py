@@ -109,3 +109,7 @@ def visualize_arctic_mask(lmax: int = 120, lat_min: float = 65.0, savepath: str 
         plt.show()
     
     plt.close()
+
+
+if __name__ == '__main__':
+    visualize_arctic_mask(lmax=40, lat_min=65.0, savepath="plots/arctic_mask_40.png")

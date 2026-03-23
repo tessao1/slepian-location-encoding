@@ -32,8 +32,7 @@ class Slepian(nn.Module, HarmonicsCache):
         
     def _create_localized_slepian(self):
         """Create Slepian functions localized to the coastlines"""
-        mask_dict, nlat, nlon = CoastlineMask.get_mask(self.legendre_polys)
-        coastline_mask = mask_dict[self.legendre_polys]
+        coastline_mask, nlat, nlon = CoastlineMask.get_mask()
         self.coastline_mask = coastline_mask
         self.mask_nlat = nlat
         self.mask_nlon = nlon

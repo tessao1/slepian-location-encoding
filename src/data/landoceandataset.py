@@ -103,22 +103,46 @@ class LandOceanDataModule(pl.LightningDataModule):
         return DataLoader(self.evalu_ds, batch_size=self.batch_size, shuffle=False)
 
 if __name__ == '__main__':
-    points = get_data_points(seed=2, cache=False, grid=True)
 
-    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres')).to_crs(4326).dissolve()
+    # Load world once
+    world = gpd.read_file(
+        gpd.datasets.get_path('naturalearth_lowres')
+    ).to_crs(4326).dissolve()
 
-    fig, ax = plt.subplots(figsize=(16,9))
-    world.plot(ax=ax, color="black")
+    # Generate datasets
+    train_points = get_data_points(N=10000, seed=0, cache=False, grid=False)
+    test_points  = get_data_points(N=10000, seed=0, cache=False, grid=True)
 
-    color = "red"
-    ax.scatter(points.loc[points.land].geometry.x, points.loc[points.land].geometry.y, color="red", marker="*")
-    ax.scatter(points.loc[~points.land].geometry.x, points.loc[~points.land].geometry.y, color="blue", marker="+")
-    ax.axis("off")
-    points.head()
+    # Create side-by-side figure
+    fig, axes = plt.subplots(1, 2, figsize=(20, 9))
+
+    datasets = [
+        ("Train (n=10000)", train_points),
+        ("Test (n=10000)", test_points)
+    ]
+
+    for ax, (title, points) in zip(axes, datasets):
+
+        world.plot(ax=ax, color="lightgray")
+
+        ax.scatter(points.loc[points.land].geometry.x,
+                points.loc[points.land].geometry.y,
+                color="forestgreen", s=8, label="Land")
+
+        ax.scatter(points.loc[~points.land].geometry.x,
+                points.loc[~points.land].geometry.y,
+                color="steelblue", s=8, label="Ocean")
+
+        ax.set_title(title, fontsize=16)
+        ax.axis("off")
+
+    axes[0].legend(loc="lower left")
+
     plt.tight_layout()
     plt.show()
 
-    print(points.land.sum(), (len(points) - points.land.sum()))
-
-    fig.savefig(DATA_DIR+"/landoceansdataset.png", transparent=True, bbox_inches="tight", pad_inches=0)
+    fig.savefig(DATA_DIR + "/landoceansdataset10k.png",
+                transparent=True,
+                bbox_inches="tight",
+                pad_inches=0)
 

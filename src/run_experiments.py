@@ -41,7 +41,6 @@ for pe in pe_list:
             '--max-epochs', str(config['max_epochs']),
             '--save-model',
             '--matplotlib',
-            # '--resume-ckpt-from-results-dir',
             '--log-wandb',
             '--seed', '42'
         ]
@@ -52,7 +51,7 @@ for pe in pe_list:
             print(f"Error: Training failed for PE={pe}")
             sys.exit(1)
         
-        print(f"✓ Completed PE={pe}\n")
+        print(f"Completed PE={pe}\n")
     
     elif pe == 'slepianhybrid':
         for sh_degree in sh_max_degrees:
@@ -74,7 +73,6 @@ for pe in pe_list:
                 '--max-epochs', str(config['max_epochs']),
                 '--save-model',
                 '--matplotlib',
-                # '--resume-ckpt-from-results-dir',
                 '--log-wandb',
                 '--seed', '42'
             ]
@@ -85,7 +83,7 @@ for pe in pe_list:
                 print(f"Error: Training failed for PE={pe}, sh-max-degree={sh_degree}")
                 sys.exit(1)
             
-            print(f"✓ Completed PE={pe}, sh-max-degree={sh_degree}\n")
+            print(f"Completed PE={pe}, sh-max-degree={sh_degree}\n")
     
     else:
         current_experiment += 1
@@ -105,7 +103,6 @@ for pe in pe_list:
             '--max-epochs', str(config['max_epochs']),
             '--save-model',
             '--matplotlib',
-            # '--resume-ckpt-from-results-dir',
             '--log-wandb',
             '--seed', '42'
         ]
@@ -116,7 +113,7 @@ for pe in pe_list:
             print(f"Error: Training failed for PE={pe}")
             sys.exit(1)
         
-        print(f"✓ Completed PE={pe}, legendre-polys={config['legendre-polys']}\n")
+        print(f"Completed PE={pe}, legendre-polys={config['legendre-polys']}\n")
 
 print("=" * 60)
 print("All experiments completed!")

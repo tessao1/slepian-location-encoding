@@ -6,14 +6,14 @@ from scipy.ndimage import binary_dilation, binary_erosion
 class CoastlineMask:
     """Shared coastline mask for local accuracy computation"""
     _instance = None
-    _mask = {}
+    _mask = None
     _nlat = None
     _nlon = None
     
     @classmethod
-    def get_mask(cls, L: int = 10):
+    def get_mask(cls):
         """Get or create the coastline mask (singleton pattern)"""
-        if L not in cls._mask:
+        if cls._mask is None:
             print("Creating coastline mask for local accuracy...")
             # Load Earth topography
             topo_coeffs = pysh.datasets.Earth.Earth2014.tbi(lmax=300)
@@ -26,7 +26,7 @@ class CoastlineMask:
             eroded = binary_erosion(mask, iterations=4)
             coastline_mask = dilated ^ eroded
 
-            cls._mask[L] = coastline_mask
+            cls._mask = coastline_mask
             cls._nlat, cls._nlon = coastline_mask.shape
         
         return cls._mask, cls._nlat, cls._nlon

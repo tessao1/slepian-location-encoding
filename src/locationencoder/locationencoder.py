@@ -97,11 +97,11 @@ class LocationEncoder(pl.LightningModule):
 
         # Initialize loss function
         if self.use_highres_metrics:
-            self.loss_fn = nn.BCEWithLogitsLoss()
+            self.loss_fn = nn.BCEWithLogitsLoss
             # Store predictions and labels for end-of-epoch metric computation
             self.test_outputs = {'uniform': [], 'coastline': [], 'island': []}
         else:
-            self.loss_fn = AN_loss()
+            self.loss_fn = AN_loss
             
         self.positional_encoder = get_positional_encoding(positional_encoding_name, hparams)
         self.neural_network = get_neural_network(
